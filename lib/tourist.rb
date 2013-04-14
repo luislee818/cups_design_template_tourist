@@ -1,5 +1,4 @@
 require 'selenium-webdriver'
-require 'pry'
 
 class Tourist
 	POPUP_WIDTH = 900  # pixels
