@@ -20,7 +20,7 @@ class Tourist
 		@max_page = -1
 		@current_page = @page_start
 		@index_start = 0
-		@index_end = [100, DESIGN_TEMPLATES_PER_PAGE].min
+		@index_end = [100, DESIGN_TEMPLATES_PER_PAGE - 1].min
 		@current_index = @index_start
 		@first_spot = true
 	end
