@@ -3,7 +3,7 @@ require 'pry'
 
 class Tourist
 	POPUP_WIDTH = 900  # pixels
-	WAIT = 30  # seconds
+	WAIT = 60  # seconds
 	DESIGN_TEMPLATES_PER_PAGE = 21
 	IFRAME_POPUP_ID = 'iframePopUp'
 	DESIGN_TEMPLATE_ID_REGEX = /[[:alnum:]]{8}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{12}/
@@ -16,21 +16,29 @@ class Tourist
 
 		@driver = Selenium::WebDriver.for @browser
 		@wait = Selenium::WebDriver::Wait.new(:timeout => WAIT)
-		@page_start = 4
-		@page_end = 5
+		@page_start = 3
+		@page_end = 4
 		@max_page = -1
 		@current_page = @page_start
-		@index_start = 6
-		@index_end = [8, DESIGN_TEMPLATES_PER_PAGE].min
+		@index_start = 2
+		@index_end = [3, DESIGN_TEMPLATES_PER_PAGE].min
 		@current_index = @index_start
 		@first_spot = true
 	end
 
 	def begin_tour
 		Dir.mkdir(@dir) unless File.directory?(@dir)
+		puts "----- SKU #{@sku} -----"
 
 		while @current_page <= @page_end
 			while @current_index <= @index_end
+				puts "----- page #{@current_page}, index #{@current_index}, start #{Time.now} -----"
+
+				if should_skip(@current_page, @current_index)
+					@current_index += 1
+					next
+				end
+
 				template_id = go_to_spot(@current_page, @current_index)
 
 				take_shot(@current_page, @current_index, template_id)
@@ -43,6 +51,10 @@ class Tourist
 		end
 
 		end_tour
+	end
+
+	def should_skip(page, index)
+		page == 1 && index == 1  # upload here
 	end
 
 	def go_to_spot(page, index)
@@ -62,6 +74,16 @@ class Tourist
 		template_id = select_design_template index
 		switch_to_main_content
 		wait_for_all_elements_to_show
+
+		popup_warning = @driver.find_element(:id, 'divPopUp')
+		if popup_warning.attribute('style').index('display: block')
+			puts '[Warning] Popup warning shown'
+			puts '[Warning] Saving screenshot for warning'
+			@driver.save_screenshot "./#{@dir}/warning_p#{page}_i#{index}.png"
+			puts '[Warning] Saved screenshot for warning'
+			@driver.find_element(:css, '#divPopUp #doOk').click
+			puts '[Warning] Popup warning dismissed'
+		end
 
 		template_id
 	end
