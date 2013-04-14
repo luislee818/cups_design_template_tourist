@@ -15,12 +15,12 @@ class Tourist
 
 		@driver = Selenium::WebDriver.for @browser
 		@wait = Selenium::WebDriver::Wait.new(:timeout => WAIT)
-		@page_start = 3
-		@page_end = 4
+		@page_start = 1
+		@page_end = 100
 		@max_page = -1
 		@current_page = @page_start
-		@index_start = 2
-		@index_end = [3, DESIGN_TEMPLATES_PER_PAGE].min
+		@index_start = 0
+		@index_end = [100, DESIGN_TEMPLATES_PER_PAGE].min
 		@current_index = @index_start
 		@first_spot = true
 	end
