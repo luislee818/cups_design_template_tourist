@@ -72,11 +72,21 @@ class Tourist
 	end
 
 	def go_to_spot(page, index)
+		# if @first_spot
+		# 	navigate_to_page
+		# 	@first_spot = false
+		# else
+		# 	click_change_design_link
+		# end
+
+		navigate_to_page
+
 		if @first_spot
-			navigate_to_page
 			@first_spot = false
 		else
-			click_change_design_link
+			puts '[Confirm] Confirming leaving page'
+			@driver.switch_to.alert.accept unless @first_spot
+			puts '[Confirm] Confirmed leaving page'
 		end
 
 		wait_for_design_template_popup
