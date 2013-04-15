@@ -3,6 +3,7 @@ require 'selenium-webdriver'
 class Tourist
 	POPUP_WIDTH = 900  # pixels
 	WAIT = 60  # seconds
+	TIMES_TO_RETRY = 5
 	DESIGN_TEMPLATES_PER_PAGE = 21
 	IFRAME_POPUP_ID = 'iframePopUp'
 	DESIGN_TEMPLATE_ID_REGEX = /[[:alnum:]]{8}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{12}/
@@ -31,18 +32,20 @@ class Tourist
 
 		while @current_page <= @page_end
 			while @current_index <= @index_end
-				puts "----- page #{@current_page}, index #{@current_index}, start #{Time.now} -----"
+				retry_upon_failure(TIMES_TO_RETRY) do
+					puts "----- page #{@current_page}, index #{@current_index}, start #{Time.now} -----"
 
-				if should_skip(@current_page, @current_index)
+					if should_skip(@current_page, @current_index)
+						@current_index += 1
+						next
+					end
+
+					template_id = go_to_spot(@current_page, @current_index)
+
+					take_shot(@current_page, @current_index, template_id)
+
 					@current_index += 1
-					next
 				end
-
-				template_id = go_to_spot(@current_page, @current_index)
-
-				take_shot(@current_page, @current_index, template_id)
-
-				@current_index += 1
 			end
 
 			@current_index = @index_start
@@ -50,6 +53,18 @@ class Tourist
 		end
 
 		end_tour
+	end
+
+	def retry_upon_failure(number_to_retry, &block)
+		number_to_retry.times do |index|
+			begin
+				puts "----- retrying ##{index + 1} -----" if index > 0
+				block.call
+				break
+			rescue
+				puts "----- error when trying for ##{index + 1} -----"
+			end
+		end
 	end
 
 	def should_skip(page, index)
