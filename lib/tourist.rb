@@ -9,10 +9,8 @@ class Tourist
 	DESIGN_TEMPLATE_ID_REGEX = /[[:alnum:]]{8}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{12}/
 
 	def initialize
-		@sku = 960105
+		@skus = [983846, 983849, 983840]
 		@browser = :firefox
-		@url = "http://stage.staplesimprintsolutions.com/StudioJs.aspx?RETURNURL=Punchout.aspx&ACTION=CREATE&SKU=#{@sku}"
-		@dir = @sku.to_s
 
 		@driver = Selenium::WebDriver.for @browser
 		@wait = Selenium::WebDriver::Wait.new(:timeout => WAIT)
@@ -27,17 +25,33 @@ class Tourist
 	end
 
 	def begin_tour
-		Dir.mkdir(@dir) unless File.directory?(@dir)
-		puts "----- SKU #{@sku} -----"
+		@skus.each do |sku|
+			tour_sku sku
+			end_sku_tour
+		end
+
+		end_tour
+	end
+
+	def end_sku_tour
+		@current_page = @page_start
+		@current_index = @index_start
+	end
+
+	def tour_sku(sku)
+		dir = sku.to_s
+		url = "http://stage.staplesimprintsolutions.com/StudioJs.aspx?RETURNURL=Punchout.aspx&ACTION=CREATE&SKU=#{sku}"
+		Dir.mkdir(dir) unless File.directory?(dir)
+		puts "----- SKU #{sku} -----"
 
 		while @current_page <= @page_end
 			while @current_index <= @index_end
 				retry_upon_failure(TIMES_TO_RETRY) do
 					puts "----- page #{@current_page}, index #{@current_index}, start #{Time.now} -----"
 
-					template_id = go_to_spot(@current_page, @current_index)
+					template_id = go_to_spot(url, @current_page, @current_index, dir)
 
-					take_shot(@current_page, @current_index, template_id)
+					take_shot(@current_page, @current_index, dir, template_id)
 
 					@current_index += 1
 				end
@@ -46,8 +60,6 @@ class Tourist
 			@current_index = @index_start
 			@current_page += 1
 		end
-
-		end_tour
 	end
 
 	def retry_upon_failure(number_to_retry, &block)
@@ -62,15 +74,8 @@ class Tourist
 		end
 	end
 
-	def go_to_spot(page, index)
-		# if @first_spot
-		# 	navigate_to_page
-		# 	@first_spot = false
-		# else
-		# 	click_change_design_link
-		# end
-
-		navigate_to_page
+	def go_to_spot(url, page, index, dir)
+		navigate_to_page url
 
 		if @first_spot
 			@first_spot = false
@@ -94,7 +99,7 @@ class Tourist
 		if popup_warning.attribute('style').index('display: block')
 			puts '[Warning] Popup warning shown'
 			puts '[Warning] Saving screenshot for warning'
-			@driver.save_screenshot "./#{@dir}/warning_p#{page}_i#{index}.png"
+			@driver.save_screenshot "./#{dir}/warning_p#{page}_i#{index}.#{template_id}.png"
 			puts '[Warning] Saved screenshot for warning'
 			@driver.find_element(:css, '#divPopUp #doOk').click
 			puts '[Warning] Popup warning dismissed'
@@ -103,9 +108,9 @@ class Tourist
 		template_id
 	end
 
-	def navigate_to_page
+	def navigate_to_page(url)
 		puts '[Init] Navigating to page'
-		@driver.navigate.to @url
+		@driver.navigate.to url
 		puts '[Init] Navigated to page'
 	end
 
@@ -178,10 +183,10 @@ class Tourist
 		puts '[Wait] All elements shown'
 	end
 
-	def take_shot(page, index, template_id)
+	def take_shot(page, index, dir, template_id)
 		shot_name = "p#{page} i#{index}.#{template_id}.png"
 		puts "[Shot] Taking shot for #{shot_name}"
-		@driver.save_screenshot "./#{@dir}/#{shot_name}"
+		@driver.save_screenshot "./#{dir}/#{shot_name}"
 		puts "[Shot] Shot taken"
 	end
 
