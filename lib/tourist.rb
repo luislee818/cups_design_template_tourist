@@ -35,11 +35,6 @@ class Tourist
 				retry_upon_failure(TIMES_TO_RETRY) do
 					puts "----- page #{@current_page}, index #{@current_index}, start #{Time.now} -----"
 
-					if should_skip(@current_page, @current_index)
-						@current_index += 1
-						next
-					end
-
 					template_id = go_to_spot(@current_page, @current_index)
 
 					take_shot(@current_page, @current_index, template_id)
@@ -65,10 +60,6 @@ class Tourist
 				puts "----- error when trying for ##{index + 1} -----"
 			end
 		end
-	end
-
-	def should_skip(page, index)
-		page == 1 && index == 1  # upload here
 	end
 
 	def go_to_spot(page, index)
