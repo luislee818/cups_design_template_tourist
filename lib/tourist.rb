@@ -9,17 +9,17 @@ class Tourist
 	DESIGN_TEMPLATE_ID_REGEX = /[[:alnum:]]{8}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{12}/
 
 	def initialize
-		@skus = [983846, 983849, 983840]
+		@skus = [983849, 983846]
 		@browser = :firefox
 
 		@driver = Selenium::WebDriver.for @browser
 		@wait = Selenium::WebDriver::Wait.new(:timeout => WAIT)
-		@page_start = 1
+		@page_start = 11
 		@page_end = 100
 		@max_page = -1
 		@current_page = @page_start
-		@index_start = 0
-		@index_end = [100, DESIGN_TEMPLATES_PER_PAGE - 1].min
+		@index_start = 7
+		@index_end = [DESIGN_TEMPLATES_PER_PAGE - 1].min
 		@current_index = @index_start
 		@first_spot = true
 	end
@@ -36,6 +36,9 @@ class Tourist
 	def end_sku_tour
 		@current_page = @page_start
 		@current_index = @index_start
+		@index_end = [DESIGN_TEMPLATES_PER_PAGE - 1].min
+		@max_page = -1
+		@page_end = 100
 	end
 
 	def tour_sku(sku)
@@ -90,6 +93,7 @@ class Tourist
 
 		save_max_page_number if @max_page == -1
 		go_to_page page unless page == 1
+		save_maximum_index_of_page
 
 		template_id = select_design_template index
 		switch_to_main_content
@@ -138,6 +142,7 @@ class Tourist
 		puts '[Pager] Looking for maximum page number'
 		page_number_input = @driver.find_element(:css, '#dtPageOf #pageOfValue input')
 		@max_page = page_number_input.attribute('value').to_i
+		@page_end = @max_page
 		puts "[Pager] Maximum page number saved as #{@max_page}"
 	end
 
@@ -155,6 +160,12 @@ class Tourist
 			end
 		end
 		puts '[Pager] First element changed'
+	end
+
+	def save_maximum_index_of_page
+		puts '[Pager] Looking for maximum index of current page'
+		@index_end = @driver.find_elements(:css, '.dtTemplates').length - 1
+		puts "[Pager] Maximum index of current page saved as #{@index_end}"
 	end
 
 	def select_design_template(index)
