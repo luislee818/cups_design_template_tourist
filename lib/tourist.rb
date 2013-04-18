@@ -2,7 +2,8 @@ require 'selenium-webdriver'
 
 class Tourist
 	POPUP_WIDTH = 900  # pixels
-	WAIT = 60  # seconds
+	TIMEOUT_WAIT = 60  # seconds
+	ELEMENTS_SHOW_UP_WAIT = 20 # seconds
 	TIMES_TO_RETRY = 5
 	DESIGN_TEMPLATES_PER_PAGE = 21
 	IFRAME_POPUP_ID = 'iframePopUp'
@@ -13,12 +14,12 @@ class Tourist
 		@browser = :firefox
 
 		@driver = Selenium::WebDriver.for @browser
-		@wait = Selenium::WebDriver::Wait.new(:timeout => WAIT)
-		@page_start = 11
+		@wait = Selenium::WebDriver::Wait.new(:timeout => TIMEOUT_WAIT)
+		@page_start = 1
 		@page_end = 100
 		@max_page = -1
 		@current_page = @page_start
-		@index_start = 7
+		@index_start = 0
 		@index_end = [DESIGN_TEMPLATES_PER_PAGE - 1].min
 		@current_index = @index_start
 		@first_spot = true
@@ -190,7 +191,7 @@ class Tourist
 
 	def wait_for_all_elements_to_show
 		puts '[Wait] Waiting for all elements to show'
-		sleep 10
+		sleep ELEMENTS_SHOW_UP_WAIT
 		puts '[Wait] All elements shown'
 	end
 
