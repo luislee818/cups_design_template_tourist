@@ -3,4 +3,5 @@ A simple script to drive browser to open every design template of specified prod
 
 ### Setup
 *bundle install*
+
 *ruby lib/tourist.rb*
