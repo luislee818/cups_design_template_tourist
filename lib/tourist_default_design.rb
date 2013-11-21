@@ -1,27 +1,22 @@
 require 'selenium-webdriver'
+require 'fileutils'
 
 class Tourist
 	POPUP_WIDTH = 900  # pixels
 	TIMEOUT_WAIT = 60  # seconds
-	ELEMENTS_SHOW_UP_WAIT = 20 # seconds
+	ELEMENTS_SHOW_UP_WAIT = 5 # seconds
 	TIMES_TO_RETRY = 5
 	DESIGN_TEMPLATES_PER_PAGE = 21
 	IFRAME_POPUP_ID = 'iframePopUp'
 	DESIGN_TEMPLATE_ID_REGEX = /[[:alnum:]]{8}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{12}/
+  SAVE_SHOTS_DIR = "shots"
 
 	def initialize
-		@skus = [983849, 983846]
+		@skus = ['..FBC256', '17428HQFC']
 		@browser = :firefox
 
 		@driver = Selenium::WebDriver.for @browser
 		@wait = Selenium::WebDriver::Wait.new(:timeout => TIMEOUT_WAIT)
-		@page_start = 1
-		@page_end = 100
-		@max_page = -1
-		@current_page = @page_start
-		@index_start = 0
-		@index_end = [DESIGN_TEMPLATES_PER_PAGE - 1].min
-		@current_index = @index_start
 		@first_spot = true
 	end
 
@@ -35,35 +30,21 @@ class Tourist
 	end
 
 	def end_sku_tour
-		@current_page = @page_start
-		@current_index = @index_start
-		@index_end = [DESIGN_TEMPLATES_PER_PAGE - 1].min
-		@max_page = -1
-		@page_end = 100
 	end
 
 	def tour_sku(sku)
-		dir = sku.to_s
+		dir = File.join(SAVE_SHOTS_DIR, sku.to_s)
 		url = "http://stage.staplesimprintsolutions.com/StudioJs.aspx?RETURNURL=Punchout.aspx&ACTION=CREATE&SKU=#{sku}"
-		Dir.mkdir(dir) unless File.directory?(dir)
+		FileUtils.mkdir_p(dir) unless File.directory?(dir)
 		puts "----- SKU #{sku} -----"
 
-		while @current_page <= @page_end
-			while @current_index <= @index_end
-				retry_upon_failure(TIMES_TO_RETRY) do
-					puts "----- page #{@current_page}, index #{@current_index}, start #{Time.now} -----"
+    retry_upon_failure(TIMES_TO_RETRY) do
+      puts "----- page #{@current_page}, index #{@current_index}, start #{Time.now} -----"
 
-					template_id = go_to_spot(url, @current_page, @current_index, dir)
+      template_id = go_to_spot(url, @current_page, @current_index, sku)
 
-					take_shot(@current_page, @current_index, dir, template_id)
-
-					@current_index += 1
-				end
-			end
-
-			@current_index = @index_start
-			@current_page += 1
-		end
+      take_shot(@current_page, @current_index, sku, template_id)
+    end
 	end
 
 	def retry_upon_failure(number_to_retry, &block)
@@ -78,7 +59,7 @@ class Tourist
 		end
 	end
 
-	def go_to_spot(url, page, index, dir)
+	def go_to_spot(url, page, index, sku)
 		navigate_to_page url
 
 		if @first_spot
@@ -89,22 +70,23 @@ class Tourist
 			puts '[Confirm] Confirmed leaving page'
 		end
 
-		wait_for_design_template_popup
-		switch_to_popup_iframe
+		# wait_for_design_template_popup
+		# switch_to_popup_iframe
 
-		save_max_page_number if @max_page == -1
-		go_to_page page unless page == 1
-		save_maximum_index_of_page
+		# save_max_page_number if @max_page == -1
+		# go_to_page page unless page == 1
+		# save_maximum_index_of_page
 
-		template_id = select_design_template index
-		switch_to_main_content
+		# template_id = select_design_template index
+    template_id = 'na'
+		# switch_to_main_content
 		wait_for_all_elements_to_show
 
 		popup_warning = @driver.find_element(:id, 'divPopUp')
 		if popup_warning.attribute('style').index('display: block')
 			puts '[Warning] Popup warning shown'
 			puts '[Warning] Saving screenshot for warning'
-			@driver.save_screenshot "./#{dir}/warning_p#{page}_i#{index}.#{template_id}.png"
+			@driver.save_screenshot File.join(SAVE_SHOTS_DIR, sku.to_s, "#{sku}.png")
 			puts '[Warning] Saved screenshot for warning'
 			@driver.find_element(:css, '#divPopUp #doOk').click
 			puts '[Warning] Popup warning dismissed'
@@ -195,10 +177,11 @@ class Tourist
 		puts '[Wait] All elements shown'
 	end
 
-	def take_shot(page, index, dir, template_id)
-		shot_name = "p#{page} i#{index}.#{template_id}.png"
-		puts "[Shot] Taking shot for #{shot_name}"
-		@driver.save_screenshot "./#{dir}/#{shot_name}"
+	def take_shot(page, index, sku, template_id)
+		shot_name = "#{sku}.png"
+		puts "[shot] taking shot for #{shot_name}"
+		file = File.join(SAVE_SHOTS_DIR, sku.to_s, shot_name)
+		@driver.save_screenshot file
 		puts "[Shot] Shot taken"
 	end
 
