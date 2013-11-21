@@ -1,13 +1,15 @@
 require 'selenium-webdriver'
+require 'fileutils'
 
 class Tourist
 	POPUP_WIDTH = 900  # pixels
 	TIMEOUT_WAIT = 60  # seconds
-	ELEMENTS_SHOW_UP_WAIT = 20 # seconds
+	ELEMENTS_SHOW_UP_WAIT = 5 # seconds
 	TIMES_TO_RETRY = 5
 	DESIGN_TEMPLATES_PER_PAGE = 21
 	IFRAME_POPUP_ID = 'iframePopUp'
 	DESIGN_TEMPLATE_ID_REGEX = /[[:alnum:]]{8}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{12}/
+  SAVE_SHOTS_DIR = "shots"
 
 	def initialize
 		@skus = [960105]
@@ -15,11 +17,11 @@ class Tourist
 
 		@driver = Selenium::WebDriver.for @browser
 		@wait = Selenium::WebDriver::Wait.new(:timeout => TIMEOUT_WAIT)
-		@page_start = 1
+		@page_start = 2
 		@page_end = 100
 		@max_page = -1
 		@current_page = @page_start
-		@index_start = 0
+		@index_start = 5
 		@index_end = [DESIGN_TEMPLATES_PER_PAGE - 1].min
 		@current_index = @index_start
 		@first_spot = true
@@ -43,9 +45,9 @@ class Tourist
 	end
 
 	def tour_sku(sku)
-		dir = sku.to_s
+		dir = File.join(SAVE_SHOTS_DIR, sku.to_s)
 		url = "http://stage.staplesimprintsolutions.com/StudioJs.aspx?RETURNURL=Punchout.aspx&ACTION=CREATE&SKU=#{sku}"
-		Dir.mkdir(dir) unless File.directory?(dir)
+		FileUtils.mkdir_p(dir) unless File.directory?(dir)
 		puts "----- SKU #{sku} -----"
 
 		while @current_page <= @page_end
@@ -53,9 +55,9 @@ class Tourist
 				retry_upon_failure(TIMES_TO_RETRY) do
 					puts "----- page #{@current_page}, index #{@current_index}, start #{Time.now} -----"
 
-					template_id = go_to_spot(url, @current_page, @current_index, dir)
+					template_id = go_to_spot(url, @current_page, @current_index, sku)
 
-					take_shot(@current_page, @current_index, dir, template_id)
+					take_shot(@current_page, @current_index, sku, template_id)
 
 					@current_index += 1
 				end
@@ -78,7 +80,7 @@ class Tourist
 		end
 	end
 
-	def go_to_spot(url, page, index, dir)
+	def go_to_spot(url, page, index, sku)
 		navigate_to_page url
 
 		if @first_spot
@@ -104,7 +106,7 @@ class Tourist
 		if popup_warning.attribute('style').index('display: block')
 			puts '[Warning] Popup warning shown'
 			puts '[Warning] Saving screenshot for warning'
-			@driver.save_screenshot "./#{dir}/warning_p#{page}_i#{index}.#{template_id}.png"
+			@driver.save_screenshot File.join(SAVE_SHOTS_DIR, sku.to_s, "#{sku}.png")
 			puts '[Warning] Saved screenshot for warning'
 			@driver.find_element(:css, '#divPopUp #doOk').click
 			puts '[Warning] Popup warning dismissed'
@@ -195,10 +197,11 @@ class Tourist
 		puts '[Wait] All elements shown'
 	end
 
-	def take_shot(page, index, dir, template_id)
+	def take_shot(page, index, sku, template_id)
 		shot_name = "p#{page} i#{index}.#{template_id}.png"
 		puts "[Shot] Taking shot for #{shot_name}"
-		@driver.save_screenshot "./#{dir}/#{shot_name}"
+		file = File.join(SAVE_SHOTS_DIR, sku.to_s, shot_name)
+		@driver.save_screenshot file
 		puts "[Shot] Shot taken"
 	end
 
