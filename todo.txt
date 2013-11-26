@@ -1,2 +1,4 @@
-[ ] Refactor!
-[ ] Click filter keys (horizontal vs. vertical)
+[x] Create DSL class for pieces of operations
+[ ] Create refine_by operations
+[ ] Create granular operations
+[ ] Expose as DSL
