@@ -11,6 +11,7 @@ class TouristDsl
 	DESIGN_TEMPLATE_ID_REGEX = /[[:alnum:]]{8}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{12}/
   SAVE_SHOTS_DIR = "shots"
 
+
   def initialize
 		@browser = :firefox
 
@@ -21,6 +22,12 @@ class TouristDsl
     @@action = nil
     @@page = nil
     @@index = nil
+
+    @popup_showing = false  # flag indicating if popup window is showing
+  end
+
+  def punchout_batch(sku, action, start_page, end_page)
+
   end
 
   def punchout(sku, action)
@@ -31,11 +38,16 @@ class TouristDsl
 		navigate_to_page url
   end
 
+  def show_vertical_designs_only
+    switch_to_popup_if_necessary
+
+    select_vertical_control
+  end
+
   def go_to_page(page)
     @@page = page
 
-    wait_for_design_template_popup
-		switch_to_popup_iframe
+    switch_to_popup_if_necessary
 
     go_to_page_core page
   end
@@ -75,6 +87,31 @@ class TouristDsl
 		puts '[Init] Navigated to page'
 	end
 
+  def switch_to_popup_if_necessary
+    unless @popup_showing
+      wait_for_design_template_popup
+      switch_to_popup_iframe
+      @popup_showing = true
+    end
+  end
+
+  def select_vertical_control
+		old_onclick = get_first_design_template_on_page().attribute 'onclick'
+		puts '[Refine] Record old onclick value'
+    # TODO: better selector?
+		vertical_radio_button = @driver.find_element(:css, "div#ContentPlaceHolder1_divVertical input")
+    vertical_radio_button.click
+		puts '[Refine] Clicked, begin waiting for first template to change'
+		@wait.until do
+			begin
+				get_first_design_template_on_page().attribute('onclick') != old_onclick
+			rescue
+				false
+			end
+		end
+		puts '[Refine] First element changed'
+  end
+
 	def	wait_for_design_template_popup
 		puts '[Wait] Waiting for popup'
 		iframe_popup = @driver.find_element(:id, 'iframePopUp')
@@ -111,6 +148,7 @@ class TouristDsl
 	def switch_to_main_content
 		puts '[Switch] Switching to main content'
 		@driver.switch_to.default_content
+    @popup_showing = false
 		puts '[Switch] Main content shown'
 	end
 
@@ -129,7 +167,8 @@ end
 
 dsl = TouristDsl.new
 dsl.punchout("960105", "create")
-dsl.go_to_page 2
-dsl.select_design_template_by_index 3
+dsl.show_vertical_designs_only
+dsl.go_to_page 3
+dsl.select_design_template_by_index 4
 dsl.take_shot
 dsl.end_tour
