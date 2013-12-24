@@ -11,6 +11,10 @@ class TouristDsl
 	DESIGN_TEMPLATE_ID_REGEX = /[[:alnum:]]{8}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{12}/
   SAVE_SHOTS_DIR = "shots"
 
+  module Action
+    CREATE = 'create'
+  end
+
 
   def initialize
 		@browser = :firefox
@@ -30,7 +34,7 @@ class TouristDsl
 
   end
 
-  def punchout(sku, action)
+  def punchout(sku, action = Action::CREATE)
     @@sku = sku
     @@action = action
 
@@ -166,7 +170,7 @@ class TouristDsl
 end
 
 dsl = TouristDsl.new
-dsl.punchout("960105", "create")
+dsl.punchout("960105")
 dsl.show_vertical_designs_only
 dsl.go_to_page 3
 dsl.select_design_template_by_index 4
